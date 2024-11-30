@@ -1,0 +1,102 @@
+---
+title: "The Key to Winning in America's Pastime"
+author: "Scooter Norton & Luke Schleck"
+date: "12/02/2024"
+format: html
+---
+
+```{r setup}
+#| include: false
+
+knitr::opts_chunk$set(echo=TRUE, warning=FALSE, message=FALSE)
+options(width = 100,
+        scipen = 999999)
+
+suppressPackageStartupMessages(library(tidyverse))
+library(openxlsx)
+library(ggplot2)
+library(kableExtra)
+library(dplyr)
+library(car)
+
+practice.question.switch <- "TRUE"
+```
+
+```{r}
+data <- read_csv("lahman_1871-2023_csv/lahman_1871-2023_csv/Teams.csv")
+data <- filter(data, G==162)
+data
+```
+
+```{r}
+baseball_data <- select(data, c('W','AB','H','BB','HR','R','RA','SO','SB','2B','3B','ERA','SHO','SV','HRA','BBA','SOA','CG','FP'))
+bd <- baseball_data
+bd
+```
+
+```{r}
+wins <- bd$W
+at_bats <- bd$AB
+hits <- bd$H
+walks <- bd$BB
+home_runs <- bd$HR
+runs <- bd$R
+runs_against <- bd$RA
+strikeouts <- bd$SO
+stolen_bases <- bd$SB
+doubles <- bd$'2B'
+triples <- bd$'3B'
+era <- bd$ERA
+shutouts <- bd$SHO
+saves <- bd$SV
+hr_against <- bd$HRA
+walks_against <- bd$BBA
+so_b_pitchers <- bd$SOA
+cg_b_pitchers <- bd$CG
+fielding_percent <- bd$FP
+
+full_model <- lm(wins ~ at_bats + hits + walks + home_runs + runs + runs_against + strikeouts + stolen_bases + doubles + triples + era + shutouts + saves + hr_against + walks_against + so_b_pitchers + cg_b_pitchers + fielding_percent, data=bd)
+summary(full_model)
+```
+
+```{r}
+plot(full_model)
+```
+
+
+```{r}
+runs_model <- lm(wins ~ runs + runs_against)
+summary(runs_model)
+```
+
+```{r}
+full_minus_runs_model <- lm(wins ~ at_bats + hits + walks + home_runs + strikeouts + stolen_bases + doubles + triples + shutouts + saves + hr_against + walks_against + so_b_pitchers + cg_b_pitchers, data=bd)
+summary(full_minus_runs_model)
+```
+
+This model contains all the original variables minus runs, runs_against, era, and fielding percentage
+
+```{r}
+plot(full_minus_runs_model)
+```
+
+
+```{r}
+backward_stepwise <- step(full_model, direction = "backward")
+summary(backward_stepwise)
+```
+
+
+```{r}
+forward_stepwise <- step(full_model, direction="forward", scope=full_model)
+summary(forward_stepwise)
+```
+
+
+```{r}
+
+```
+
+
+
+
