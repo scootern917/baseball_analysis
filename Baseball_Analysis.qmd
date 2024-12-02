@@ -22,19 +22,18 @@ library(car)
 practice.question.switch <- "TRUE"
 ```
 
+## Data Cleaning
 ```{r}
 data <- read_csv("lahman_1871-2023_csv/lahman_1871-2023_csv/Teams.csv")
 data <- filter(data, G==162)
-data
-```
 
-```{r}
 baseball_data <- select(data, c('W','AB','H','BB','HR','R','RA','SO','SB','2B','3B','ERA','SHO','SV','HRA','BBA','SOA','CG','FP'))
 bd <- baseball_data
 bd
 ```
 
 ```{r}
+#assigning variable names
 wins <- bd$W
 at_bats <- bd$AB
 hits <- bd$H
@@ -92,11 +91,84 @@ forward_stepwise <- step(full_model, direction="forward", scope=full_model)
 summary(forward_stepwise)
 ```
 
+Correlation coefficients for the dataframe using Wins
+
+```{r}
+cor(baseball_data$W,baseball_data)
+```
+For our model, we choose to remove all variables with |correlation coefficient| < 0.2 (very weak/no correlation)
+
+We lose:
+
+* AB
+* SO
+* SB
+* 3B
+* SOA
+* CG
+
+This leaves us with:
+
+* H
+* BB
+* HR
+* \R
+* \RA
+* 2B
+* \ERA
+* SHO
+* SV
+* HRA
+* BBA
+* FP
+
+```{r}
+model_cor_geq_0.2 <- lm(wins ~ hits + walks + home_runs + doubles + shutouts + saves + hr_against + walks_against + fielding_percent, data=bd)
+summary(model_cor_geq_0.2)
+```
+
+for abs|cor| > 0.3, we lose:
+
+* HR
+* 2B
+* HRA
+* FP
+
+Which leaves us with:
+
+* H
+* BB
+* \R
+* \RA
+* \ERA
+* SHO
+* SV
+* BBA
+
+```{r}
+model_cor_geq_0.3 <- lm(wins ~ hits + walks + shutouts + saves + walks_against, data=bd)
+summary(model_cor_geq_0.3)
+```
 
 ```{r}
 
 ```
 
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
 
 
 
