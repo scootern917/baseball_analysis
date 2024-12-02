@@ -38,13 +38,32 @@ To do list:
 * Stepwise regression without runs
 * Test interaction terms
 * Test quadratic terms
+* Limitations/Challenges
+
+
+# Introduction
+
+Baseball is the oldest of the four major American Sports, and has been dubbed as America's Pastime for its influence in pop culture, longevity, and continued hold as a premier source of American entertainment. The MLB has run for over 120 years, and like all sports, the ultimate goal is to win. This begs the question: using on-field variables, can we create a model that can accurately predicts a team's wins in a given season?
+
+We used a data set containing team season statistics from 1865-2023.
+
+* To prevent bias in the model, we omitted seasons where fewer than 162 games were played
+* We omitted many categorical variables that were not indicative of team success. Some examples include:
+  * Year
+  * Team ID
+  * Park
+* We omitted numeric variables we deemed irrelevant to our analysis, such as rank, attendance, 
+
+### Factors that aren't considered
+
+We chose to ignore many variables in our
 
 ## Data Cleaning
 ```{r}
 data <- read_csv("lahman_1871-2023_csv/lahman_1871-2023_csv/Teams.csv")
 data <- filter(data, G==162)
 
-baseball_data <- select(data, c('W','AB','H','BB','HR','R','RA','SO','SB','2B','3B','ERA','SHO','SV','HRA','BBA','SOA','CG','FP'))
+baseball_data <- select(data, c('W','AB','H','BB','HR','R','RA','SO','SB','2B','3B','ERA','SHO','SV','HRA','BBA','SOA','CG','FP','E'))
 bd <- baseball_data
 bd
 ```
@@ -70,8 +89,9 @@ walks_against <- bd$BBA
 so_b_pitchers <- bd$SOA
 cg_b_pitchers <- bd$CG
 fielding_percent <- bd$FP
+errors <- bd$E
 
-full_model <- lm(wins ~ at_bats + hits + walks + home_runs + runs + runs_against + strikeouts + stolen_bases + doubles + triples + era + shutouts + saves + hr_against + walks_against + so_b_pitchers + cg_b_pitchers + fielding_percent, data=bd)
+full_model <- lm(wins ~ at_bats + hits + walks + home_runs + runs + runs_against + strikeouts + stolen_bases + doubles + triples + era + shutouts + saves + hr_against + walks_against + so_b_pitchers + cg_b_pitchers + fielding_percent + errors, data=bd)
 summary(full_model)
 ```
 
@@ -85,10 +105,7 @@ runs_model <- lm(wins ~ runs + runs_against)
 summary(runs_model)
 ```
 
-```{r}
-full_minus_runs_model <- lm(wins ~ at_bats + hits + walks + home_runs + strikeouts + stolen_bases + doubles + triples + shutouts + saves + hr_against + walks_against + so_b_pitchers + cg_b_pitchers, data=bd)
-summary(full_minus_runs_model)
-```
+
 
 This model contains all the original variables minus runs, runs_against, era, and fielding percentage
 
@@ -96,86 +113,92 @@ This model contains all the original variables minus runs, runs_against, era, an
 plot(full_minus_runs_model)
 ```
 
-
+### Best model so far
 ```{r}
 backward_stepwise <- step(full_model, direction = "backward")
 summary(backward_stepwise)
 ```
 
-
+### Same as backward stepwise
 ```{r}
-forward_stepwise <- step(full_model, direction="forward", scope=full_model)
+forward_stepwise <- step(full_model, direction="both", scope=full_model)
 summary(forward_stepwise)
 ```
+
+
+```{r}
+full_minus_runs_model <- lm(wins ~ at_bats + hits + walks + home_runs + strikeouts + stolen_bases + doubles + triples + shutouts + saves + hr_against + walks_against + so_b_pitchers + cg_b_pitchers, data=bd)
+summary(full_minus_runs_model)
+```
+
+```{r}
+full_minus_runs_stepwise <- step(full_minus_runs_model, direction='backward')
+summary(full_minus_runs_)
+```
+
+```{r}
+simple_minus_runs_model <- lm(wins ~ at_bats + hits + walks + home_runs + stolen_bases + shutouts + saves + hr_against + walks_against + so_b_pitchers + cg_b_pitchers, data=bd)
+step(simple_minus_runs_model, direction='backward')
+```
+
+
+
+
+
+
 
 Correlation coefficients for the dataframe using Wins
 
 ```{r}
 cor(baseball_data$W,baseball_data)
 ```
-For our model, we choose to remove all variables with |correlation coefficient| < 0.2 (very weak/no correlation)
 
-We lose:
 
-* AB
-* SO
-* SB
-* 3B
-* SOA
-* CG
 
-This leaves us with:
 
-* H
-* BB
-* HR
-* \R
-* \RA
-* 2B
-* \ERA
-* SHO
-* SV
-* HRA
-* BBA
-* FP
+
+## Time to scale the data
 
 ```{r}
-model_cor_geq_0.2 <- lm(wins ~ hits + walks + home_runs + doubles + shutouts + saves + hr_against + walks_against + fielding_percent, data=bd)
-summary(model_cor_geq_0.2)
-```
+df_scaled <- lapply(bd, function(column) scale(column, center = TRUE, scale = TRUE))
 
-for abs|cor| > 0.3, we lose:
-
-* HR
-* 2B
-* HRA
-* FP
-
-Which leaves us with:
-
-* H
-* BB
-* \R
-* \RA
-* \ERA
-* SHO
-* SV
-* BBA
-
-```{r}
-model_cor_geq_0.3 <- lm(wins ~ hits + walks + shutouts + saves + walks_against, data=bd)
-summary(model_cor_geq_0.3)
+#bd_scaled
 ```
 
 ```{r}
+#assigning variable names
+wins <- df_scaled$W
+at_bats <- df_scaled$AB
+hits <- df_scaled$H
+walks <- df_scaled$BB
+home_runs <- df_scaled$HR
+runs <- df_scaled$R
+runs_against <- df_scaled$RA
+strikeouts <- df_scaled$SO
+stolen_bases <- df_scaled$SB
+doubles <- df_scaled$'2B'
+triples <- df_scaled$'3B'
+era <- df_scaled$ERA
+shutouts <- df_scaled$SHO
+saves <- df_scaled$SV
+hr_against <- df_scaled$HRA
+walks_against <- df_scaled$BBA
+so_b_pitchers <- df_scaled$SOA
+cg_b_pitchers <- df_scaled$CG
+fielding_percent <- df_scaled$FP
 
+full_model_scaled <- lm(wins ~ at_bats + hits + walks + home_runs + runs + runs_against + strikeouts + stolen_bases + doubles + triples + era + shutouts + saves + hr_against + walks_against + so_b_pitchers + cg_b_pitchers + fielding_percent, data=bd)
+summary(full_model_scaled)
+```
+
+
+```{r}
+full_minus_runs_scaled <- lm(wins ~ at_bats + hits + walks + home_runs + strikeouts + stolen_bases + doubles + triples + shutouts + saves + hr_against + walks_against + so_b_pitchers + cg_b_pitchers + fielding_percent, data=bd)
+summary(full_minus_runs_scaled)
 ```
 
 ```{r}
-
-```
-
-```{r}
+summary(step(full_minus_runs_scaled, direction='backward'))
 
 ```
 
